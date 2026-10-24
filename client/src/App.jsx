@@ -1,21 +1,16 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { UserButton } from '@clerk/react'
-import { ImageIcon } from 'lucide-react'
+import { ScissorsIcon } from 'lucide-react'
 import Auth from './pages/Auth'
+import Library from './pages/Library'
 import ProtectedRoute from './components/ProtectedRoute'
-import Logo from './components/ui/Logo'
+import AppLayout from './components/AppLayout'
 import EmptyState from './components/ui/EmptyState'
+import { AccountProvider } from './context/AccountContext'
 
 // Placeholder until the studio is rebuilt
 const StudioSoon = () => (
-  <div className="mx-auto max-w-7xl px-4 py-5 sm:px-8">
-    <header className="flex items-center justify-between">
-      <Logo />
-      <UserButton />
-    </header>
-    <div className="card mt-8">
-      <EmptyState icon={ImageIcon} title="You're signed in" text="The new studio is coming in the next commit." />
-    </div>
+  <div className="card">
+    <EmptyState icon={ScissorsIcon} title="The studio is being rebuilt" text="Your library already works." />
   </div>
 )
 
@@ -24,7 +19,11 @@ const App = () => (
     <Route path="/login/*" element={<Auth mode="login" />} />
     <Route path="/register/*" element={<Auth mode="register" />} />
     <Route element={<ProtectedRoute />}>
-      <Route path="/studio" element={<StudioSoon />} />
+      <Route element={<AccountProvider><AppLayout /></AccountProvider>}>
+        <Route path="/studio" element={<StudioSoon />} />
+        <Route path="/studio/:id" element={<StudioSoon />} />
+        <Route path="/library" element={<Library />} />
+      </Route>
     </Route>
     <Route path="*" element={<Navigate to="/login" replace />} />
   </Routes>
