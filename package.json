@@ -1,6 +1,6 @@
 {
   "name": "clearcut",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "description": "Clearcut: remove image backgrounds in seconds",
   "author": "Yusuf Hussain",
@@ -10,7 +10,8 @@
     "lint": "npm run lint --prefix client",
     "build": "npm run build --prefix client",
     "seed": "npm run seed --prefix server",
-    "test:security": "npm run test:security --prefix server"
+    "test:security": "npm run test:security --prefix server",
+    "migrate": "npm run migrate --prefix server"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
