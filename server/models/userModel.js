@@ -1,14 +1,18 @@
 import mongoose from "mongoose";
 
-const userSchema = new mongoose.Schema({
-    clerkId: { type: String, required: true, unique: true },
-    email: { type: String, required: true, unique: true },
-    photo: { type: String, required: true },
-    firstName: { type: String },
-    lastName: { type: String },
-    creditBalance: { type: Number, default: 5 },
-})
+export const FREE_CREDITS = Number(process.env.FREE_CREDITS ?? 5);
 
-const userModel = mongoose.models.user || mongoose.model("user", userSchema)
+const userSchema = new mongoose.Schema(
+    {
+        clerkId: { type: String, required: true, unique: true },
+        email: { type: String, default: "", index: true },
+        name: { type: String, default: "" },
+        photo: { type: String, default: "" },
+        credits: { type: Number, default: FREE_CREDITS, min: 0 },
+    },
+    { timestamps: true }
+);
+
+const userModel = mongoose.models.user || mongoose.model("user", userSchema);
 
 export default userModel;

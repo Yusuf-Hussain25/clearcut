@@ -1,14 +1,9 @@
-import express from 'express'
-import { userCredits, paymentRazorpay, verifyRazorpay, clerkWebhooks, paymentStripe, verifyStripe } from '../controllers/UserController.js'
-import authUser from '../middlewares/auth.js'
+import express from "express";
+import requireUser from "../middleware/auth.js";
+import { getMe } from "../controllers/userController.js";
 
-const userRouter = express.Router()
+const userRouter = express.Router();
 
-userRouter.post('/webhooks', clerkWebhooks)
-userRouter.get('/credits', authUser, userCredits)
-userRouter.post('/pay-razor', authUser, paymentRazorpay)
-userRouter.post('/verify-razor', verifyRazorpay)
-userRouter.post("/pay-stripe", authUser, paymentStripe)
-userRouter.post("/verify-stripe", authUser, verifyStripe)
+userRouter.get("/", requireUser, getMe);
 
-export default userRouter
+export default userRouter;
