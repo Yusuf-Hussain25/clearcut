@@ -73,7 +73,7 @@ const Studio = () => {
   }, [])
 
   // The open image comes from the navigation state (after an upload or from a list) or is fetched
-  const passed = location.state?.image?.id === id ? location.state.image : null
+  const passed = id && location.state?.image?.id === id ? location.state.image : null
   const image = id ? opened[id] || passed : null
   const loadError = id ? loadErrors[id] : null
   const setImage = useCallback((img) => setOpened((o) => ({ ...o, [img.id]: img })), [])
