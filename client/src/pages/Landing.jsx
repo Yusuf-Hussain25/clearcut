@@ -83,7 +83,7 @@ const Landing = () => {
       <main>
         {/* Hero */}
         <section className="mx-auto grid w-full max-w-7xl items-center gap-10 px-4 pt-12 pb-16 sm:px-8 lg:grid-cols-[1fr_1.05fr] lg:pt-20">
-          <div className="animate-fade-up">
+          <div className="min-w-0 animate-fade-up">
             <span className="chip chip-accent"><SparklesIcon size={13} /> New in 2.0: backdrops, blur and a library</span>
             <h1 className="mt-5 text-[44px] leading-[1.02] font-semibold tracking-[-0.05em] sm:text-[64px]">
               Remove the background.<br /><span className="gradient-text">Keep the moment.</span>
@@ -101,7 +101,7 @@ const Landing = () => {
               ))}
             </ul>
           </div>
-          <div className="animate-fade-up [animation-delay:.1s]">
+          <div className="min-w-0 animate-fade-up [animation-delay:.1s]">
             <StudioPreview />
           </div>
         </section>

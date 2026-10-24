@@ -46,7 +46,7 @@ const StudioPreview = ({ samples = SAMPLES.slice(0, 4), className = '' }) => {
       </CompareSlider>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-3">
-        <div className="segmented !p-1" role="group" aria-label="Sample photo">
+        <div className="segmented max-w-full overflow-x-auto !p-1" role="group" aria-label="Sample photo">
           {samples.map((s, i) => (
             <button key={s.slug} aria-pressed={i === index} className="!h-7 !px-2.5 !text-xs" onClick={() => pick({ index: i })}>
               {s.label}

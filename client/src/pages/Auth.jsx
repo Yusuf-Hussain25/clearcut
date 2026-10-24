@@ -68,7 +68,7 @@ const Auth = ({ mode = 'login' }) => {
 
       {/* Mobile order: headline, auth card, preview. Desktop: hero left, card right. */}
       <main className="mx-auto grid w-full max-w-7xl gap-8 px-4 pb-14 sm:px-8 lg:grid-cols-[1.12fr_1fr] lg:gap-x-14 lg:pt-4">
-        <section className="animate-fade-up lg:col-start-1 lg:row-start-1">
+        <section className="min-w-0 animate-fade-up lg:col-start-1 lg:row-start-1">
           <span className="chip chip-accent"><SparklesIcon size={13} /> Clearcut 2.0 is here</span>
           <h1 className="mt-5 text-[40px] leading-[1.04] font-semibold tracking-[-0.045em] sm:text-[54px]">
             Cut out anything.<br className="hidden sm:block" /> <span className="gradient-text">Keep only the subject.</span>
@@ -78,7 +78,7 @@ const Auth = ({ mode = 'login' }) => {
           </p>
         </section>
 
-        <section className="animate-fade-up [animation-delay:.08s] lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start">
+        <section className="min-w-0 animate-fade-up [animation-delay:.08s] lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start">
           <div className="card mx-auto w-full max-w-[460px] p-5 shadow-deep sm:p-7">
             <div className="segmented mb-6 w-full" role="group" aria-label="Choose log in or sign up">
               <button aria-pressed={!isRegister} className="flex-1 justify-center" onClick={() => navigate('/login', { replace: true })}>Log in</button>
@@ -125,7 +125,7 @@ const Auth = ({ mode = 'login' }) => {
           </div>
         </section>
 
-        <section className="flex flex-col gap-8 animate-fade-up [animation-delay:.12s] lg:col-start-1 lg:row-start-2">
+        <section className="flex min-w-0 flex-col gap-8 animate-fade-up [animation-delay:.12s] lg:col-start-1 lg:row-start-2">
           <StudioPreview />
 
           <ul className="grid gap-3 sm:grid-cols-2">

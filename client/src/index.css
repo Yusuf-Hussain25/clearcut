@@ -135,6 +135,7 @@
     background: var(--bg);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    overflow-x: clip; /* clip, not hidden, so sticky headers keep working */
     transition: background-color .3s var(--ease-out), color .3s var(--ease-out);
   }
 
@@ -545,10 +546,20 @@ body::after {
       transform: translate(-50%, 0);
     }
 
-    [data-tip-pos="bottom"]::after {
+    [data-tip-pos="bottom"]::after,
+    [data-tip-pos="bottom-end"]::after {
       bottom: auto;
       top: calc(100% + 10px);
       transform: translate(-50%, -4px);
+    }
+
+    /* For controls at the right edge of the screen */
+    [data-tip-pos="bottom-end"]::after,
+    [data-tip-pos="bottom-end"]:hover::after,
+    [data-tip-pos="bottom-end"]:focus-visible::after {
+      left: auto;
+      right: 0;
+      transform: none;
     }
   }
 
