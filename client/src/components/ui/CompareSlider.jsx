@@ -60,13 +60,9 @@ const CompareSlider = ({ before, beforeAlt = 'Original photo', ratio, autoplay =
     >
       <div className="absolute inset-0">{children}</div>
 
-      <img
-        src={before}
-        alt={beforeAlt}
-        draggable={false}
-        className="absolute inset-0 size-full object-contain"
-        style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }}
-      />
+      <div className="absolute inset-0 bg-elev" style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }}>
+        <img src={before} alt={beforeAlt} draggable={false} className="size-full object-contain" />
+      </div>
 
       <span className="pointer-events-none absolute top-3 left-3 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur" style={{ opacity: pos > 12 ? 1 : 0 }}>
         Before

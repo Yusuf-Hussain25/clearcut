@@ -1,21 +1,33 @@
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { UserButton } from '@clerk/react'
 import { ImageIcon } from 'lucide-react'
+import Auth from './pages/Auth'
+import ProtectedRoute from './components/ProtectedRoute'
 import Logo from './components/ui/Logo'
-import ThemeToggle from './components/ui/ThemeToggle'
 import EmptyState from './components/ui/EmptyState'
 
-// Temporary shell while the 2.0 screens are rebuilt on the new design system
-const App = () => (
-  <div className="min-h-dvh">
-    <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-5 sm:px-8">
+// Placeholder until the studio is rebuilt
+const StudioSoon = () => (
+  <div className="mx-auto max-w-7xl px-4 py-5 sm:px-8">
+    <header className="flex items-center justify-between">
       <Logo />
-      <ThemeToggle />
+      <UserButton />
     </header>
-    <main className="mx-auto max-w-7xl px-4 sm:px-8">
-      <div className="card">
-        <EmptyState icon={ImageIcon} title="Clearcut 2.0 is on its way" text="The new studio, library and billing pages are being rebuilt." />
-      </div>
-    </main>
+    <div className="card mt-8">
+      <EmptyState icon={ImageIcon} title="You're signed in" text="The new studio is coming in the next commit." />
+    </div>
   </div>
+)
+
+const App = () => (
+  <Routes>
+    <Route path="/login/*" element={<Auth mode="login" />} />
+    <Route path="/register/*" element={<Auth mode="register" />} />
+    <Route element={<ProtectedRoute />}>
+      <Route path="/studio" element={<StudioSoon />} />
+    </Route>
+    <Route path="*" element={<Navigate to="/login" replace />} />
+  </Routes>
 )
 
 export default App
