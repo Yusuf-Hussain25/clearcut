@@ -21,11 +21,14 @@ export const formatBytes = (bytes = 0) => {
 };
 
 // Minor units -> "$19" / "₹1,499"
-export const formatMoney = (amount, currency = "USD") =>
-    new Intl.NumberFormat(currency === "INR" ? "en-IN" : "en-US", {
+export const formatMoney = (amount, currency = "USD") => {
+    const digits = amount % 100 === 0 ? 0 : 2;
+    return new Intl.NumberFormat(currency === "INR" ? "en-IN" : "en-US", {
         style: "currency",
         currency,
-        maximumFractionDigits: amount % 100 === 0 ? 0 : 2,
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
     }).format(amount / 100);
+};
 
 export const plural = (n, word, many = `${word}s`) => `${n.toLocaleString()} ${n === 1 ? word : many}`;

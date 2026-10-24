@@ -1,13 +1,17 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Route, Routes } from 'react-router-dom'
+import Landing from './pages/Landing'
 import Auth from './pages/Auth'
-import Library from './pages/Library'
 import Studio from './pages/Studio'
+import Library from './pages/Library'
+import Billing from './pages/Billing'
+import NotFound from './pages/NotFound'
 import ProtectedRoute from './components/ProtectedRoute'
 import AppLayout from './components/AppLayout'
 import { AccountProvider } from './context/AccountContext'
 
 const App = () => (
   <Routes>
+    <Route path="/" element={<Landing />} />
     <Route path="/login/*" element={<Auth mode="login" />} />
     <Route path="/register/*" element={<Auth mode="register" />} />
     <Route element={<ProtectedRoute />}>
@@ -15,9 +19,10 @@ const App = () => (
         <Route path="/studio" element={<Studio />} />
         <Route path="/studio/:id" element={<Studio />} />
         <Route path="/library" element={<Library />} />
+        <Route path="/billing" element={<Billing />} />
       </Route>
     </Route>
-    <Route path="*" element={<Navigate to="/login" replace />} />
+    <Route path="*" element={<NotFound />} />
   </Routes>
 )
 
