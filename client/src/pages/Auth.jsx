@@ -69,7 +69,7 @@ const Auth = ({ mode = 'login' }) => {
       {/* Mobile order: headline, auth card, preview. Desktop: hero left, card right. */}
       <main className="mx-auto grid w-full max-w-7xl gap-8 px-4 pb-14 sm:px-8 lg:grid-cols-[1.12fr_1fr] lg:gap-x-14 lg:pt-4">
         <section className="min-w-0 animate-fade-up lg:col-start-1 lg:row-start-1">
-          <span className="chip chip-accent"><SparklesIcon size={13} /> Clearcut 2.0 is here</span>
+          <span className="chip chip-accent"><SparklesIcon size={13} /> Free to start, no watermark</span>
           <h1 className="mt-5 text-[40px] leading-[1.04] font-semibold tracking-[-0.045em] sm:text-[54px]">
             Cut out anything.<br className="hidden sm:block" /> <span className="gradient-text">Keep only the subject.</span>
           </h1>
