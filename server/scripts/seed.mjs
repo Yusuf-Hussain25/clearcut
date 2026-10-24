@@ -10,18 +10,16 @@ import "dotenv/config";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import mongoose from "mongoose";
 import { createClerkClient } from "@clerk/express";
-import userModel, { FREE_CREDITS } from "../models/userModel.js";
-import imageModel from "../models/imageModel.js";
-import transactionModel from "../models/transactionModel.js";
+import { pool, query } from "../config/db.js";
+import { FREE_CREDITS } from "../lib/users.js";
 import { PLANS, currency } from "../lib/plans.js";
 
 const API = process.env.API_URL || `http://localhost:${process.env.PORT || 4000}`;
 const SAMPLES = path.join(path.dirname(fileURLToPath(import.meta.url)), "samples");
 const DAY = 24 * 60 * 60 * 1000;
 
-const missing = ["MONGODB_URI", "CLERK_SECRET_KEY", "DEMO_EMAIL", "DEMO_PASSWORD", "SEED_PASSWORD"].filter((k) => !process.env[k]);
+const missing = ["DATABASE_URL", "CLERK_SECRET_KEY", "DEMO_EMAIL", "DEMO_PASSWORD", "SEED_PASSWORD"].filter((k) => !process.env[k]);
 if (missing.length) {
     console.error(`Add ${missing.join(", ")} to server/.env first (see .env.example).`);
     process.exit(1);
@@ -97,7 +95,7 @@ const api = async (token, method, url, body) => {
 };
 
 const upload = async (token, clerkId, file, name) => {
-    await userModel.updateOne({ clerkId }, { $inc: { credits: 1 } }); // the seeder pays for its own uploads
+    await query("UPDATE users SET credits = credits + 1 WHERE clerk_id = $1", [clerkId]); // the seeder pays for its own uploads
     const form = new FormData();
     form.append("image", new Blob([fs.readFileSync(path.join(SAMPLES, `${file}.jpg`))], { type: "image/jpeg" }), `${name}.jpg`);
     const { image } = await api(token, "POST", "/api/images", form);
@@ -114,13 +112,10 @@ const at = (daysAgo) => {
 const seedLibrary = async (person, clerkId, token, items, { sample }) => {
     let added = 0;
     for (const [file, name, daysAgo, favorite] of items) {
-        const existing = await imageModel.findOne({ owner: clerkId, name });
-        if (existing) continue;
+        const { rows } = await query("SELECT 1 FROM images WHERE owner = $1 AND name = $2", [clerkId, name]);
+        if (rows.length) continue;
         const image = await upload(token, clerkId, file, name);
-        await imageModel.collection.updateOne(
-            { _id: new mongoose.Types.ObjectId(image.id) },
-            { $set: { createdAt: at(daysAgo), updatedAt: at(daysAgo), favorite: Boolean(favorite), sample } }
-        );
+        await query("UPDATE images SET created_at = $2, updated_at = $2, favorite = $3, sample = $4 WHERE id = $1", [image.id, at(daysAgo), Boolean(favorite), sample]);
         added += 1;
         process.stdout.write(".");
     }
@@ -133,22 +128,25 @@ const seedPurchases = async (clerkId, purchases) => {
     for (const [planId, daysAgo, provider] of purchases) {
         const plan = PLANS.find((p) => p.id === planId);
         const ref = `seed_${clerkId}_${planId}_${daysAgo}`;
-        if (await transactionModel.exists({ providerRef: ref })) continue;
         const cur = currency();
-        const tx = await transactionModel.create({
-            owner: clerkId, plan: plan.name, credits: plan.credits, amount: plan.price[cur], currency: cur,
-            provider, status: "paid", providerRef: ref, paymentId: `${ref}_pay`, paidAt: at(daysAgo),
-        });
-        await transactionModel.collection.updateOne({ _id: tx._id }, { $set: { createdAt: at(daysAgo), updatedAt: at(daysAgo) } });
+        await query(
+            `INSERT INTO transactions (owner, plan, credits, amount, currency, provider, status, provider_ref, payment_id, paid_at, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, 'paid', $7, $8, $9, $9, $9)
+             ON CONFLICT (provider, provider_ref) DO NOTHING`,
+            [clerkId, plan.name, plan.credits, plan.price[cur], cur, provider, ref, `${ref}_pay`, at(daysAgo)]
+        );
     }
 };
 
 // Balance = free credits + purchases - cutouts, as if the account had been used normally
 const settleCredits = async (clerkId) => {
-    const [bought] = await transactionModel.aggregate([{ $match: { owner: clerkId, status: "paid" } }, { $group: { _id: null, c: { $sum: "$credits" } } }]);
-    const used = await imageModel.countDocuments({ owner: clerkId });
-    const credits = Math.max(FREE_CREDITS + (bought?.c || 0) - used, 3);
-    await userModel.updateOne({ clerkId }, { $set: { credits } });
+    const { rows: [r] } = await query(
+        `SELECT (SELECT coalesce(sum(credits), 0) FROM transactions WHERE owner = $1 AND status = 'paid') AS bought,
+                (SELECT count(*) FROM images WHERE owner = $1) AS used`,
+        [clerkId]
+    );
+    const credits = Math.max(FREE_CREDITS + r.bought - r.used, 3);
+    await query("UPDATE users SET credits = $2 WHERE clerk_id = $1", [clerkId, credits]);
     return credits;
 };
 
@@ -159,16 +157,13 @@ const main = async () => {
         console.error(`Can't reach the API at ${API}. Start it with "npm run dev" first.`);
         process.exit(1);
     }
-    await mongoose.connect(process.env.MONGODB_URI, { dbName: process.env.DB_NAME || "clearcut" });
     console.log(`Seeding Clearcut through ${API}\n`);
 
     for (const person of PEOPLE) {
         const user = await ensureClerkUser(person);
         const token = await tokenFor(user.id);
         await api(token, "GET", "/api/me"); // creates the Clearcut record the normal way
-        await userModel.updateOne({ clerkId: user.id }, { $set: { photo: user.imageUrl } });
-        const userDoc = await userModel.findOne({ clerkId: user.id });
-        await userModel.collection.updateOne({ _id: userDoc._id }, { $set: { createdAt: at(person.demo ? 21 : 16) } });
+        await query("UPDATE users SET photo = $2, created_at = $3 WHERE clerk_id = $1", [user.id, user.imageUrl, at(person.demo ? 21 : 16)]);
 
         if (person.demo) {
             await seedLibrary(person, user.id, token, DEMO_LIBRARY, { sample: true });
@@ -194,11 +189,11 @@ const main = async () => {
     }
 
     console.log(`\nDone. Sign in with "Explore with a demo account" or ${process.env.DEMO_EMAIL} / DEMO_PASSWORD.`);
-    await mongoose.disconnect();
+    await pool.end();
 };
 
 main().catch(async (err) => {
     console.error("\nSeeding failed:", err.message);
-    await mongoose.disconnect();
+    await pool.end();
     process.exit(1);
 });

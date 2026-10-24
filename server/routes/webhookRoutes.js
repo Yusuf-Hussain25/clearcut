@@ -1,7 +1,7 @@
 import express from "express";
+import { clerkClient } from "@clerk/express";
 import { verifyWebhook } from "@clerk/express/webhooks";
-import userModel from "../models/userModel.js";
-import imageModel from "../models/imageModel.js";
+import { query } from "../config/db.js";
 import { ensureUser, syncUserProfile } from "../lib/users.js";
 
 // Optional Clerk webhook (CLERK_WEBHOOK_SIGNING_SECRET). Users are also created on their first
@@ -21,13 +21,10 @@ webhookRouter.post("/clerk", express.raw({ type: "application/json" }), async (r
 
     try {
         if (evt.type === "user.created") await ensureUser(evt.data.id);
-        if (evt.type === "user.updated") await syncUserProfile(evt.data);
-        if (evt.type === "user.deleted" && evt.data.id) {
-            await Promise.all([
-                userModel.deleteOne({ clerkId: evt.data.id }),
-                imageModel.deleteMany({ owner: evt.data.id }),
-            ]);
-        }
+        // The payload is raw snake_case JSON; fetch the user so the profile mapping is the same everywhere
+        if (evt.type === "user.updated") await syncUserProfile(await clerkClient.users.getUser(evt.data.id));
+        // Images and purchases go with the user (ON DELETE CASCADE)
+        if (evt.type === "user.deleted" && evt.data.id) await query("DELETE FROM users WHERE clerk_id = $1", [evt.data.id]);
         res.json({ ok: true });
     } catch (error) {
         console.error("Clerk webhook failed:", error);

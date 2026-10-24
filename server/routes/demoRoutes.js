@@ -1,6 +1,6 @@
 import express from "express";
 import { clerkClient } from "@clerk/express";
-import userModel from "../models/userModel.js";
+import { query } from "../config/db.js";
 import { demoEmail } from "../config/env.js";
 
 // "Explore with a demo account": issues a one-time Clerk sign-in ticket for the demo user only.
@@ -35,7 +35,7 @@ demoRouter.post("/session", async (req, res) => {
             if (!data.length) return res.status(404).json({ error: "Demo account not found. Run npm run seed first." });
             demoUserId = data[0].id;
         }
-        await userModel.updateOne({ clerkId: demoUserId, credits: { $lt: DEMO_MIN_CREDITS } }, { $set: { credits: DEMO_MIN_CREDITS } });
+        await query("UPDATE users SET credits = $2 WHERE clerk_id = $1 AND credits < $2", [demoUserId, DEMO_MIN_CREDITS]);
         const token = await clerkClient.signInTokens.createSignInToken({ userId: demoUserId, expiresInSeconds: 60 });
         res.json({ ticket: token.token });
     } catch (error) {

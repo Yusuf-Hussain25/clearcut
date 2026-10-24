@@ -2,12 +2,9 @@
 // Creates two throwaway users, checks who can see, change and pay for what, then deletes them.
 // Usage: npm run test:security   (API running on API_URL, default http://localhost:4000)
 import "dotenv/config";
-import mongoose from "mongoose";
 import sharp from "sharp";
 import { createClerkClient } from "@clerk/express";
-import userModel from "../models/userModel.js";
-import imageModel from "../models/imageModel.js";
-import transactionModel from "../models/transactionModel.js";
+import { pool, query } from "../config/db.js";
 
 const API = process.env.API_URL || `http://localhost:${process.env.PORT || 4000}`;
 const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
@@ -55,7 +52,6 @@ const form = (buffer = small, type = "image/jpeg", name = "sneaker.jpg") => {
     return f;
 };
 
-await mongoose.connect(process.env.MONGODB_URI, { dbName: process.env.DB_NAME || "clearcut" });
 const alice = await makeUser("alice");
 const bob = await makeUser("bob");
 
@@ -87,7 +83,7 @@ try {
     console.log("\nSigned file URLs");
     const fileUrl = up.body.image.urls.result;
     check("signed result URL works", (await fetch(API + fileUrl)).status === 200);
-    check("URL signed for another image is refused", (await fetch(API + fileUrl.replace(id, bobList.body.images[0]?.id || "0".repeat(24)))).status === 403);
+    check("URL signed for another image is refused", (await fetch(API + fileUrl.replace(id, bobList.body.images[0]?.id || "00000000-0000-4000-8000-000000000000"))).status === 403);
     check("tampered signature is refused", (await fetch(API + fileUrl.replace(/sig=.{4}/, "sig=AAAA"))).status === 403);
     check("switching file kind is refused", (await fetch(API + fileUrl.replace("/result?", "/original?"))).status === 403);
     const past = Math.floor(Date.now() / 1000) - 60;
@@ -98,10 +94,12 @@ try {
     check("non-image upload -> 400", bad.status === 400);
     check("credit is refunded after a failed upload", bad.body.credits === startCredits - 1);
 
-    await userModel.updateOne({ clerkId: alice.id }, { credits: 1 });
+    const setCredits = (n) => query("UPDATE users SET credits = $2 WHERE clerk_id = $1", [alice.id, n]);
+    const creditsOf = async () => (await query("SELECT credits FROM users WHERE clerk_id = $1", [alice.id])).rows[0].credits;
+    await setCredits(1);
     const burst = await Promise.all([1, 2, 3].map(() => call(alice, "POST", "/api/images", form())));
     const ok = burst.filter((r) => r.status === 201).length;
-    const after = await userModel.findOne({ clerkId: alice.id });
+    const after = { credits: await creditsOf() };
     check("3 parallel uploads with 1 credit: exactly one succeeds", ok === 1, `${ok} succeeded`);
     check("balance never goes below zero", after.credits === 0, `credits=${after.credits}`);
     const broke = await call(alice, "POST", "/api/images", form());
@@ -111,32 +109,32 @@ try {
     check("checkout with an unknown plan -> 400", (await call(alice, "POST", "/api/billing/checkout", { planId: "free-lunch", provider: "stripe" })).status === 400);
     check("checkout with an unknown provider -> 400", (await call(alice, "POST", "/api/billing/checkout", { planId: "starter", provider: "paypal" })).status === 400);
     // A pending purchase that was never paid: the original credited it from a URL flag
-    const tx = await transactionModel.create({ owner: alice.id, plan: "Studio", credits: 1000, amount: 4900, currency: "USD", provider: "razorpay", providerRef: `order_test_${Date.now()}` });
+    const { rows: [tx] } = await query(
+        "INSERT INTO transactions (owner, plan, credits, amount, currency, provider, provider_ref) VALUES ($1, 'Studio', 1000, 4900, 'USD', 'razorpay', $2) RETURNING *",
+        [alice.id, `order_test_${Date.now()}`]
+    );
+    tx.providerRef = tx.provider_ref;
     const fake = await call(alice, "POST", "/api/billing/confirm", { provider: "razorpay", orderId: tx.providerRef, paymentId: "pay_fake", signature: "0".repeat(64) });
     check("Razorpay confirm with a forged signature is refused", fake.status === 400 || fake.status === 404, `status ${fake.status}`);
     const bobClaim = await call(bob, "POST", "/api/billing/confirm", { provider: "razorpay", orderId: tx.providerRef, paymentId: "pay_fake", signature: "0".repeat(64) });
     check("another user can't confirm someone else's order -> 404", bobClaim.status === 404);
     const stripeFake = await call(alice, "POST", "/api/billing/confirm", { provider: "stripe", sessionId: "cs_test_made_up" });
     check("Stripe confirm for an unknown session -> 404", stripeFake.status === 404);
-    const final = await userModel.findOne({ clerkId: alice.id });
+    const final = { credits: await creditsOf() };
     check("no credits were added without a payment", final.credits === 0, `credits=${final.credits}`);
-    check("purchase stays pending", (await transactionModel.findById(tx._id)).status === "pending");
+    check("purchase stays pending", (await query("SELECT status FROM transactions WHERE id = $1", [tx.id])).rows[0].status === "pending");
 
     console.log("\nOther endpoints");
     const hook = await fetch(`${API}/api/webhooks/clerk`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: "user.deleted", data: { id: bob.id } }) });
     check("unsigned Clerk webhook is refused", hook.status === 400 || hook.status === 404, `status ${hook.status}`);
-    check("unknown image id -> 404", (await call(alice, "GET", "/api/images/000000000000000000000000")).status === 404);
+    check("unknown image id -> 404", (await call(alice, "GET", "/api/images/00000000-0000-4000-8000-000000000000")).status === 404);
     check("malformed image id -> 404", (await call(alice, "GET", "/api/images/not-an-id")).status === 404);
 } finally {
     for (const u of [alice, bob]) {
-        await Promise.all([
-            clerk.users.deleteUser(u.id).catch(() => {}),
-            userModel.deleteOne({ clerkId: u.id }),
-            imageModel.deleteMany({ owner: u.id }),
-            transactionModel.deleteMany({ owner: u.id }),
-        ]);
+        // Images and purchases are removed with the user (ON DELETE CASCADE)
+        await Promise.all([clerk.users.deleteUser(u.id).catch(() => {}), query("DELETE FROM users WHERE clerk_id = $1", [u.id])]);
     }
-    await mongoose.disconnect();
+    await pool.end();
 }
 
 console.log(`\n${passed} passed, ${failed} failed\n`);

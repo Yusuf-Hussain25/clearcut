@@ -3,7 +3,7 @@ import express from "express";
 import cors from "cors";
 import { clerkMiddleware } from "@clerk/express";
 import { checkEnv, origins } from "./config/env.js";
-import connectDB from "./config/db.js";
+import { checkDB } from "./config/db.js";
 import { describeProvider, warmUp } from "./lib/providers.js";
 import { serveFile } from "./controllers/imageController.js";
 import userRouter from "./routes/userRoutes.js";
@@ -45,7 +45,7 @@ app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
     res.status(status).json({ error: message, ...(err.credits !== undefined && { credits: err.credits }) });
 });
 
-await connectDB();
+await checkDB();
 app.listen(PORT, () => {
     console.log(`Clearcut API on http://localhost:${PORT} (engine: ${describeProvider().name})`);
     warmUp();

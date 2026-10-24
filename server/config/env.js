@@ -1,6 +1,6 @@
 // Fails fast with a readable message when server/.env is missing required values.
 const REQUIRED = {
-    MONGODB_URI: "MongoDB server, e.g. mongodb://127.0.0.1:27017",
+    DATABASE_URL: "Postgres connection string: Neon -> your project -> Connect",
     CLERK_PUBLISHABLE_KEY: "Clerk -> Configure -> API keys -> Publishable key",
     CLERK_SECRET_KEY: "Clerk -> Configure -> API keys -> Secret key",
 };

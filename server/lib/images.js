@@ -67,21 +67,27 @@ export const verifyFileSignature = (id, kind, exp, sig) => {
     return expected.length === given.length && crypto.timingSafeEqual(expected, given);
 };
 
-export const serializeImage = (img) => ({
-    id: img._id.toString(),
-    name: img.name,
-    width: img.width,
-    height: img.height,
-    originalBytes: img.originalBytes,
-    resultBytes: img.resultBytes,
-    provider: img.provider,
-    durationMs: img.durationMs,
-    favorite: img.favorite,
-    sample: img.sample,
-    createdAt: img.createdAt,
+export const isImageId = (id) => typeof id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+// Columns safe to select for lists (everything except the binaries)
+export const IMAGE_COLUMNS =
+    "id, owner, name, width, height, original_mime, original_bytes, result_bytes, provider, duration_ms, favorite, sample, created_at";
+
+export const serializeImage = (row) => ({
+    id: row.id,
+    name: row.name,
+    width: row.width,
+    height: row.height,
+    originalBytes: row.original_bytes,
+    resultBytes: row.result_bytes,
+    provider: row.provider,
+    durationMs: row.duration_ms,
+    favorite: row.favorite,
+    sample: row.sample,
+    createdAt: row.created_at,
     urls: {
-        original: fileUrl(img._id, "original"),
-        result: fileUrl(img._id, "result"),
-        thumb: fileUrl(img._id, "thumb"),
+        original: fileUrl(row.id, "original"),
+        result: fileUrl(row.id, "result"),
+        thumb: fileUrl(row.id, "thumb"),
     },
 });
