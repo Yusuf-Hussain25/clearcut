@@ -1,15 +1,23 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Clearcut removes the background from any photo in seconds. Download a transparent PNG, drop in a new backdrop, and keep every cutout in your library." />
+    <meta name="theme-color" content="#07080b" />
     <title>Clearcut · Remove image backgrounds in seconds</title>
-    <meta name="description" content="Clearcut removes the background from any photo in seconds. Download a transparent PNG or drop in a new background." />
+    <script>
+      // Dark by default; follow a saved choice or the system light setting before first paint
+      try {
+        var saved = localStorage.getItem('clearcut-theme');
+        var light = saved ? saved === 'light' : window.matchMedia('(prefers-color-scheme: light)').matches;
+        if (light) document.documentElement.setAttribute('data-theme', 'light');
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   </body>
 </html>
