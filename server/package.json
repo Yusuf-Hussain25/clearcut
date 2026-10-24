@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "server": "nodemon server.js"
+    "server": "nodemon server.js",
+    "test:security": "node scripts/security-test.mjs"
   },
   "author": "Yusuf Hussain",
   "license": "MIT",

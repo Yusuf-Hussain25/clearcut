@@ -8,6 +8,9 @@ import { describeProvider, warmUp } from "./lib/providers.js";
 import { serveFile } from "./controllers/imageController.js";
 import userRouter from "./routes/userRoutes.js";
 import imageRouter from "./routes/imageRoutes.js";
+import billingRouter from "./routes/billingRoutes.js";
+import demoRouter from "./routes/demoRoutes.js";
+import webhookRouter from "./routes/webhookRoutes.js";
 import { MAX_UPLOAD_MB } from "./middleware/upload.js";
 
 checkEnv();
@@ -17,6 +20,7 @@ const app = express();
 app.set("trust proxy", 1);
 
 app.use(cors({ origin: origins(), credentials: true }));
+app.use("/api/webhooks", webhookRouter); // needs the raw body, so it comes before express.json
 app.use(express.json({ limit: "100kb" }));
 app.use(clerkMiddleware());
 
@@ -26,6 +30,8 @@ app.get("/api/health", (req, res) => res.json({ ok: true, engine: describeProvid
 app.get("/api/files/:id/:kind", serveFile);
 app.use("/api/me", userRouter);
 app.use("/api/images", imageRouter);
+app.use("/api/billing", billingRouter);
+app.use("/api/demo", demoRouter);
 
 app.use((req, res) => res.status(404).json({ error: "Not found" }));
 
